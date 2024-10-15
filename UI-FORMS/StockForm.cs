@@ -8,6 +8,12 @@ using SCANHUB.Models;
 using SCANHUB___INVENTARIO_Y_CAJA.Database;
 using System.Collections.Generic;
 using System.Linq;
+using iTextRectangle = iTextSharp.text.Rectangle;
+
+
+using iTextSharp.text;
+using iTextSharp.text.pdf;
+using System.Drawing;
 
 namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
 {
@@ -195,13 +201,16 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
         }
 
         // Función para realizar la búsqueda
+        // Función para realizar la búsqueda
         private void BuscarProducto(string terminoBusqueda)
         {
-            if (!string.IsNullOrEmpty(terminoBusqueda) && terminoBusqueda != "Buscar por nombre o código de barras")
+            if (!string.IsNullOrEmpty(terminoBusqueda) && terminoBusqueda != "Buscar por nombre, código o categoría")
             {
-                // Filtrar la lista de productos basada en la descripción o código del producto
+                // Filtrar la lista de productos basada en la descripción, código o categoría del producto
                 var productosFiltrados = DatabaseConfig.GetStockProducts()
-                    .Where(p => p.Description.ToLower().Contains(terminoBusqueda.ToLower()) || p.Code.Contains(terminoBusqueda))
+                    .Where(p => p.Description.ToLower().Contains(terminoBusqueda.ToLower())
+                             || p.Code.Contains(terminoBusqueda)
+                             || p.CategoryName.ToLower().Contains(terminoBusqueda.ToLower())) // Añadimos la búsqueda por categoría
                     .ToList();
 
                 // Actualizar el DataGridView con los resultados filtrados
@@ -253,12 +262,111 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
         // Evento para imprimir el stock
         private void BtnImprimir_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Funcionalidad de impresión en desarrollo.");
+            ImprimirPDF(miDataGridView); // Pasamos el DataGridView actual al método para generar el PDF
         }
 
 
-        // Botón para exportar datos desde Excel
-        private void BtnExportar_Click(object sender, EventArgs e)
+        public void ImprimirPDF(DataGridView dataGridView)
+    {
+        // Crear el diálogo para que el usuario elija la ubicación y el nombre del archivo
+        SaveFileDialog saveFileDialog = new SaveFileDialog();
+        saveFileDialog.Filter = "PDF Files (*.pdf)|*.pdf"; // Filtrar para que solo se muestren archivos PDF
+        saveFileDialog.Title = "Guardar archivo PDF";
+        saveFileDialog.FileName = "Stock_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".pdf"; // Nombre por defecto
+
+        if (saveFileDialog.ShowDialog() == DialogResult.OK)
+        {
+            // Obtener la ruta seleccionada por el usuario
+            string rutaArchivo = saveFileDialog.FileName;
+
+            // Obtener la información de la empresa usando GetUserAccount
+            var businessInfo = DatabaseConfig.GetUserAccount();
+
+                // Crear el documento PDF
+                Document documento = new Document(iTextSharp.text.PageSize.A4, 25, 25, 30, 30);
+                PdfWriter writer = PdfWriter.GetInstance(documento, new FileStream(rutaArchivo, FileMode.Create));
+
+            // Abrir el documento para agregar contenido
+            documento.Open();
+
+            // Estilo de fuentes
+            iTextSharp.text.Font fuenteEncabezado = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14f, BaseColor.BLACK);
+            iTextSharp.text.Font fuenteNormal = FontFactory.GetFont(FontFactory.HELVETICA, 10f, BaseColor.BLACK);
+            iTextSharp.text.Font fuenteTablaEncabezado = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10f, BaseColor.WHITE);
+
+            // Agregar la información de la empresa como encabezado
+            PdfPTable tablaEncabezado = new PdfPTable(1);
+            tablaEncabezado.WidthPercentage = 100;
+            tablaEncabezado.DefaultCell.Border = iTextRectangle.NO_BORDER; // Usar iTextRectangle para las celdas
+            tablaEncabezado.AddCell(new PdfPCell(new Phrase(businessInfo.RazonSocial, fuenteEncabezado)) { Border = iTextRectangle.NO_BORDER });
+            tablaEncabezado.AddCell(new PdfPCell(new Phrase("CUIT: " + businessInfo.Cuil, fuenteNormal)) { Border = iTextRectangle.NO_BORDER });
+            tablaEncabezado.AddCell(new PdfPCell(new Phrase("Email: " + businessInfo.Email, fuenteNormal)) { Border = iTextRectangle.NO_BORDER });
+            tablaEncabezado.SpacingAfter = 20;  // Espacio después de la cabecera
+            documento.Add(tablaEncabezado);
+
+            // Crear una tabla para el stock (con solo las columnas deseadas)
+            PdfPTable tabla = new PdfPTable(4); // Solo incluimos 4 columnas: Código, Descripción, Precio Unitario y Categoría
+            tabla.WidthPercentage = 100; // Ancho de la tabla al 100%
+            tabla.SpacingBefore = 10f;
+            tabla.SpacingAfter = 10f;
+            tabla.SetWidths(new float[] { 2f, 5f, 2f, 3f });
+
+            // Encabezados de la tabla con estilo
+            string[] encabezados = { "Código", "Descripción", "Precio Unitario", "Categoría" };
+            foreach (string encabezado in encabezados)
+            {
+                PdfPCell celdaEncabezado = new PdfPCell(new Phrase(encabezado, fuenteTablaEncabezado))
+                {
+                    BackgroundColor = BaseColor.DARK_GRAY,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    Padding = 5
+                };
+                tabla.AddCell(celdaEncabezado);
+            }
+
+            // Recorrer las filas del DataGridView y agregar solo las columnas relevantes al PDF
+            foreach (DataGridViewRow fila in dataGridView.Rows)
+            {
+                if (fila.IsNewRow) continue; // Evitar fila vacía al final
+
+                tabla.AddCell(new PdfPCell(new Phrase(fila.Cells["Codigo"].Value?.ToString() ?? "", fuenteNormal))
+                {
+                    HorizontalAlignment = Element.ALIGN_CENTER
+                });
+                tabla.AddCell(new PdfPCell(new Phrase(fila.Cells["Descripcion"].Value?.ToString() ?? "", fuenteNormal))
+                {
+                    HorizontalAlignment = Element.ALIGN_LEFT
+                });
+                tabla.AddCell(new PdfPCell(new Phrase(fila.Cells["PrecioUnitario"].Value?.ToString() ?? "", fuenteNormal))
+                {
+                    HorizontalAlignment = Element.ALIGN_CENTER
+                });
+                tabla.AddCell(new PdfPCell(new Phrase(fila.Cells["Categoria"].Value?.ToString() ?? "", fuenteNormal))
+                {
+                    HorizontalAlignment = Element.ALIGN_LEFT
+                });
+            }
+
+            // Agregar la tabla al documento
+            documento.Add(tabla);
+
+            // Cerrar el documento
+            documento.Close();
+
+            // Mostrar mensaje de éxito
+            MessageBox.Show("PDF generado exitosamente en: " + Path.GetFullPath(rutaArchivo));
+        }
+        else
+        {
+            // Si el usuario cancela, puedes mostrar un mensaje o simplemente no hacer nada
+            MessageBox.Show("Se canceló la generación del PDF.");
+        }
+    }
+
+
+
+    // Botón para exportar datos desde Excel
+    private void BtnExportar_Click(object sender, EventArgs e)
         {
             // Configurar la licencia para EPPlus
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
