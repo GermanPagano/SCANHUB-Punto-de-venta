@@ -110,9 +110,6 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
         }
 
 
-
-
-
         private void CerrarSesion_Click(object sender, EventArgs e)
         {
             // Mostrar un mensaje de confirmación
