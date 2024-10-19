@@ -471,7 +471,7 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
         //metodos para actualizar stock
 
 
-        //metodo para traer el producto segun el codigo ( en el update )
+        // metodo para traer el producto segun el codigo ( en el update )
         public static Product GetProductByCode(string codigoProducto)
         {
             Product product = null;
