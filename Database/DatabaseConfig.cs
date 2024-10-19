@@ -232,14 +232,18 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
         public static List<Product> GetStockProducts()
         {
             List<Product> products = new List<Product>();
-            string dbPath = "Database\\MyDatabase.sqlite";  // Ruta de la base de datos
+            string dbPath = "Database\\MyDatabase.sqlite"; // Ruta de la base de datos
+
             using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
             {
                 connection.Open();
-                // Modificamos la consulta para obtener tanto el CategoryID como el CategoryName
-                string query = @"SELECT s.ProductCode, s.ProductDescription, s.StockAvailable, s.StockMin, s.UnitPrice, s.Discount, s.SupplierID, s.CategoryID, c.CategoryName 
+
+                // Consulta con LEFT JOIN para incluir productos sin categoría
+                string query = @"SELECT s.ProductCode, s.ProductDescription, s.StockAvailable, 
+                                s.StockMin, s.UnitPrice, s.Discount, s.SupplierID, 
+                                s.CategoryID, c.CategoryName 
                          FROM Stock s
-                         JOIN ProductCategory c ON s.CategoryID = c.CategoryID";
+                         LEFT JOIN ProductCategory c ON s.CategoryID = c.CategoryID";
 
                 using (var command = new SQLiteCommand(query, connection))
                 {
@@ -256,8 +260,8 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
                                 PrecioUnitario = double.TryParse(reader["UnitPrice"].ToString(), out double precioUnitario) ? precioUnitario : 0.0,
                                 Descuento = double.TryParse(reader["Discount"].ToString(), out double descuento) ? descuento : 0.0,
                                 SupplierID = int.TryParse(reader["SupplierID"].ToString(), out int proveedorID) ? proveedorID : 0,
-                                CategoryID = int.TryParse(reader["CategoryID"].ToString(), out int categoryID) ? categoryID : 0,  // Aquí obtenemos el ID de la categoría
-                                CategoryName = reader["CategoryName"].ToString() // Aquí obtenemos el nombre de la categoría
+                                CategoryID = int.TryParse(reader["CategoryID"].ToString(), out int categoryID) ? categoryID : 0,
+                                CategoryName = reader["CategoryName"]?.ToString() ?? "Sin Categoría" // Si es NULL, asigna "Sin Categoría"
                             };
                             products.Add(product);
                         }
@@ -378,7 +382,6 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
         }
 
 
-
         // Método para obtener la lista de proveedores ( que ya debe existir en la carga )
         public static List<Supplier> GetSuppliers()
         {
@@ -438,8 +441,7 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
         }
 
 
-
-        // metodo para traer el correo del usuario
+        // Método para traer el correo del usuario
         public static string GetBusinessEmail()
         {
             string email = null;
@@ -464,6 +466,148 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
 
             return email;
         }
+
+
+        //metodos para actualizar stock
+
+
+        //metodo para traer el producto segun el codigo ( en el update )
+        public static Product GetProductByCode(string codigoProducto)
+        {
+            Product product = null;
+            string dbPath = "Database\\MyDatabase.sqlite";  // Asegúrate de que la ruta a tu base de datos es correcta
+
+            using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
+            {
+                connection.Open();
+                string query = "SELECT * FROM Stock WHERE ProductCode = @codigoProducto";
+
+                using (var command = new SQLiteCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@codigoProducto", codigoProducto);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            product = new Product
+                            {
+                                Code = reader["ProductCode"].ToString(),
+                                StockDisponible = int.Parse(reader["StockAvailable"].ToString())
+                                // Puedes obtener más campos si es necesario
+                            };
+                        }
+                    }
+                }
+            }
+
+            return product;
+        }
+        public static void UpdateStockInDatabase(string codigoProducto, int stockSumar)
+        {
+            try
+            {
+                // Abrir conexión a la base de datos
+                string dbPath = "Database\\MyDatabase.sqlite";  // Asegúrate de que la ruta a tu base de datos es correcta
+                using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    // Obtener el stock actual del producto
+                    string query = "SELECT StockAvailable FROM Stock WHERE ProductCode = @ProductCode";
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@ProductCode", codigoProducto);
+
+                        int stockActual = Convert.ToInt32(command.ExecuteScalar());
+
+                        // Sumar el stock del Excel al stock actual
+                        int nuevoStock = stockActual + stockSumar;
+
+                        // Actualizar el stock en la base de datos
+                        string updateQuery = "UPDATE Stock SET StockAvailable = @NuevoStock WHERE ProductCode = @ProductCode";
+                        using (var updateCommand = new SQLiteCommand(updateQuery, connection))
+                        {
+                            updateCommand.Parameters.AddWithValue("@NuevoStock", nuevoStock);
+                            updateCommand.Parameters.AddWithValue("@ProductCode", codigoProducto);
+
+                            int rowsAffected = updateCommand.ExecuteNonQuery();
+
+                            if (rowsAffected > 0)
+                            {
+                                MessageBox.Show($"Stock actualizado para el producto con código {codigoProducto}: nuevo stock {nuevoStock}.");
+                            }
+                            else
+                            {
+                                MessageBox.Show($"No se pudo actualizar el stock para el producto con código {codigoProducto}.");
+                            }
+                        }
+                    }
+
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al actualizar el stock: {ex.Message}");
+            }
+        }
+
+        //metodos para reemplazar stock
+
+        // Obtener el ID de la categoría según su nombre
+        public static int GetCategoryIDByName(string categoryName)
+        {
+            string query = "SELECT CategoryID FROM ProductCategory WHERE CategoryName = @CategoryName";
+            using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
+            {
+                connection.Open();
+                using (var command = new SQLiteCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@CategoryName", categoryName);
+                    var result = command.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 0;
+                }
+            }
+        }
+
+        // Crear una nueva categoría si no existe
+        public static int CreateCategory(string categoryName)
+        {
+            string insertQuery = "INSERT INTO ProductCategory (CategoryName) VALUES (@CategoryName)";
+            using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
+            {
+                connection.Open();
+                using (var command = new SQLiteCommand(insertQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@CategoryName", categoryName);
+                    command.ExecuteNonQuery();
+                    return (int)connection.LastInsertRowId; // Devuelve el ID de la nueva categoría
+                }
+            }
+        }
+
+        // Método para limpiar la tabla Stock
+        public static void ClearStock()
+        {
+            string query = "DELETE FROM Stock";
+            using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
+            {
+                connection.Open();
+                using (var command = new SQLiteCommand(query, connection))
+                {
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+
+
+
+
+
+
+
 
 
 

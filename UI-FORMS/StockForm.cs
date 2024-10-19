@@ -14,6 +14,7 @@ using iTextRectangle = iTextSharp.text.Rectangle;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using System.Drawing;
+using OfficeOpenXml.Style;
 
 namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
 {
@@ -201,7 +202,6 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
         }
 
         // Función para realizar la búsqueda
-        // Función para realizar la búsqueda
         private void BuscarProducto(string terminoBusqueda)
         {
             if (!string.IsNullOrEmpty(terminoBusqueda) && terminoBusqueda != "Buscar por nombre, código o categoría")
@@ -258,14 +258,12 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
             }
         }
 
-
         // Evento para imprimir el stock
         private void BtnImprimir_Click(object sender, EventArgs e)
         {
             ImprimirPDF(miDataGridView); // Pasamos el DataGridView actual al método para generar el PDF
         }
-
-
+        // Función  para imprimir el stock
         public void ImprimirPDF(DataGridView dataGridView)
     {
         // Crear el diálogo para que el usuario elija la ubicación y el nombre del archivo
@@ -363,10 +361,8 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
         }
     }
 
-
-
-    // Botón para exportar datos desde Excel
-    private void BtnExportar_Click(object sender, EventArgs e)
+        // Botón para exportar datos desde Excel
+        private void BtnExportar_Click(object sender, EventArgs e)
         {
             // Configurar la licencia para EPPlus
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -391,10 +387,13 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
                             // Obtener la tabla de datos desde el DataGridView
                             DataTable dataTable = (DataTable)miDataGridView.DataSource;
 
-                            // Agregar encabezados de columna
+                            // Agregar encabezados de columna con estilo
                             for (int col = 0; col < dataTable.Columns.Count; col++)
                             {
                                 worksheet.Cells[1, col + 1].Value = dataTable.Columns[col].ColumnName;
+                                worksheet.Cells[1, col + 1].Style.Font.Bold = true;
+                                worksheet.Cells[1, col + 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                                worksheet.Cells[1, col + 1].Style.Border.BorderAround(ExcelBorderStyle.Thin);
                             }
 
                             // Agregar los datos de las filas
@@ -402,9 +401,24 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
                             {
                                 for (int col = 0; col < dataTable.Columns.Count; col++)
                                 {
-                                    worksheet.Cells[row + 2, col + 1].Value = dataTable.Rows[row][col].ToString();
+                                    object cellValue = dataTable.Rows[row][col];
+
+                                    // Verificar si el valor es numérico y guardarlo como tal
+                                    if (int.TryParse(cellValue.ToString(), out int numericValue))
+                                    {
+                                        worksheet.Cells[row + 2, col + 1].Value = numericValue; // Guardar como número
+                                    }
+                                    else
+                                    {
+                                        worksheet.Cells[row + 2, col + 1].Value = cellValue.ToString(); // Guardar como texto
+                                    }
+
+                                    worksheet.Cells[row + 2, col + 1].Style.Border.BorderAround(ExcelBorderStyle.Thin);
                                 }
                             }
+
+                            // Ajustar automáticamente el ancho de las columnas al contenido
+                            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
                             // Guardar el archivo en la ubicación seleccionada por el usuario
                             FileInfo excelFile = new FileInfo(saveFileDialog.FileName);
@@ -421,30 +435,20 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.UI_FORMS
             }
         }
 
+
         // Botón para importar datos desde Excel
         private void BtnImportar_Click(object sender, EventArgs e)
         {
-            // Abrir el formulario de opciones de importación
-            using (ImportOptionsForm importOptionsForm = new ImportOptionsForm())
+            ImportOptionsForm importOptionsForm = new ImportOptionsForm();
+
+            // Suscribirnos al evento para recargar el DataGridView
+            importOptionsForm.OnStockUpdated += () => CargarDatosEnGridView(miDataGridView);
+
+            if (importOptionsForm.ShowDialog() == DialogResult.OK)
             {
-                if (importOptionsForm.ShowDialog() == DialogResult.OK)
-                {
-                    // Aquí podrías manejar el retorno de opciones si fuera necesario.
-                    // Por ejemplo, dependiendo de si elige actualizar o reemplazar.
-                    if (importOptionsForm.UpdateStock)
-                    {
-                        // Lógica para actualizar stock se moverá a ImportOptionsForm
-                        MessageBox.Show("Actualizar stock seleccionado.");
-                    }
-                    else if (importOptionsForm.ReplaceStock)
-                    {
-                        // Lógica para reemplazar stock se moverá a ImportOptionsForm
-                        MessageBox.Show("Reemplazar stock seleccionado.");
-                    }
-                }
+                MessageBox.Show("Importación completada.");
             }
         }
-
 
 
 
