@@ -191,6 +191,9 @@
     <EmbeddedResource Include="UI-FORMS\AddProduct.resx">
       <DependentUpon>AddProduct.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="UI-FORMS\CajaForm.resx">
+      <DependentUpon>CajaForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI-FORMS\Dashboard.resx">
       <DependentUpon>Dashboard.cs</DependentUpon>
     </EmbeddedResource>

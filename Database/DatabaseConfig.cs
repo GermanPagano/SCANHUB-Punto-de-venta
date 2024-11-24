@@ -475,12 +475,12 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
         public static Product GetProductByCode(string codigoProducto)
         {
             Product product = null;
-            string dbPath = "Database\\MyDatabase.sqlite";  // Asegúrate de que la ruta a tu base de datos es correcta
+            string dbPath = "Database\\MyDatabase.sqlite";
 
             using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
             {
                 connection.Open();
-                string query = "SELECT * FROM Stock WHERE ProductCode = @codigoProducto";
+                string query = "SELECT ProductCode, ProductDescription, UnitPrice, Discount FROM Stock WHERE ProductCode = @codigoProducto";
 
                 using (var command = new SQLiteCommand(query, connection))
                 {
@@ -493,8 +493,9 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
                             product = new Product
                             {
                                 Code = reader["ProductCode"].ToString(),
-                                StockDisponible = int.Parse(reader["StockAvailable"].ToString())
-                                // Puedes obtener más campos si es necesario
+                                Description = reader["ProductDescription"].ToString(),
+                                PrecioUnitario = Convert.ToDouble(reader["UnitPrice"]),
+                                Descuento = Convert.ToDouble(reader["Discount"])
                             };
                         }
                     }
@@ -503,6 +504,9 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
 
             return product;
         }
+
+
+
         public static void UpdateStockInDatabase(string codigoProducto, int stockSumar)
         {
             try
@@ -602,8 +606,7 @@ namespace SCANHUB___INVENTARIO_Y_CAJA.Database
         }
 
 
-
-
+  
 
 
 

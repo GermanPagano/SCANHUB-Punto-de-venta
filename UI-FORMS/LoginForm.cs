@@ -25,52 +25,51 @@ namespace SCANHUB___INVENTARIO_Y_CAJA
 
         private void InitializeCustomComponents()
         {
-            // Establecer el tamaño del formulario
-            this.ClientSize = new Size(500, 400); // Ajusta estos valores como necesites
+           
+            this.ClientSize = new Size(500, 400); 
 
-            int centerPoint = this.ClientSize.Width / 2; // Punto medio del formulario horizontalmente
+            int centerPoint = this.ClientSize.Width / 2;
 
-            // PictureBox para el logo
+            
             logoPictureBox = new PictureBox();
             logoPictureBox.Image = Image.FromFile(@"Images\Logo.png");
-            logoPictureBox.Size = new Size(200, 100); // Tamaño del logo
+            logoPictureBox.Size = new Size(200, 100);
             logoPictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
-            logoPictureBox.Location = new Point((centerPoint - logoPictureBox.Width / 2), 20); // Centrar el logo en el formulario
+            logoPictureBox.Location = new Point((centerPoint - logoPictureBox.Width / 2), 20);
             this.Controls.Add(logoPictureBox);
 
-            // Configuración de la Label y TextBox para el usuario
+            
             Label lblEmail = new Label();
             lblEmail.Text = "Usuario:";
             lblEmail.Font = new Font("Arial", 10);
             lblEmail.Size = new Size(100, 20);
-            lblEmail.Location = new Point((centerPoint - 250 / 2), 130); // Ajusta para centrar
+            lblEmail.Location = new Point((centerPoint - 250 / 2), 130); 
             this.Controls.Add(lblEmail);
 
             txtEmail = new TextBox();
             txtEmail.Size = new Size(250, 30);
             txtEmail.Font = new Font("Arial", 12);
-            txtEmail.Location = new Point((centerPoint - txtEmail.Width / 2), 150); // Ajusta para centrar
+            txtEmail.Location = new Point((centerPoint - txtEmail.Width / 2), 150); 
             this.Controls.Add(txtEmail);
 
-            // Configuración de la Label y TextBox para la contraseña
+            
             Label lblPassword = new Label();
             lblPassword.Text = "Contraseña:";
             lblPassword.Font = new Font("Arial", 10);
             lblPassword.Size = new Size(100, 20);
-            lblPassword.Location = new Point((centerPoint - 250 / 2), 190); // Ajusta para centrar
+            lblPassword.Location = new Point((centerPoint - 250 / 2), 190);
             this.Controls.Add(lblPassword);
 
             txtPassword = new TextBox();
             txtPassword.Size = new Size(250, 30);
             txtPassword.PasswordChar = '*';
             txtPassword.Font = new Font("Arial", 12);
-            txtPassword.KeyUp += new KeyEventHandler(txtPassword_KeyUp); // Asigna el evento KeyUp
-            txtPassword.Location = new Point((centerPoint - txtPassword.Width / 2), 210); // Ajusta para centrar
+            txtPassword.KeyUp += new KeyEventHandler(txtPassword_KeyUp);
+            txtPassword.Location = new Point((centerPoint - txtPassword.Width / 2), 210);
             this.Controls.Add(txtPassword);
 
 
 
-            // Configuración del botón de acceso
             btnLogin = new Button();
             btnLogin.Size = new Size(250, 40);
             btnLogin.Text = "Acceder";
@@ -79,7 +78,7 @@ namespace SCANHUB___INVENTARIO_Y_CAJA
             btnLogin.ForeColor = Color.White;
             btnLogin.FlatStyle = FlatStyle.Flat;
             btnLogin.FlatAppearance.BorderSize = 0;
-            btnLogin.Location = new Point((centerPoint - btnLogin.Width / 2), 260); // Ajusta para centrar
+            btnLogin.Location = new Point((centerPoint - btnLogin.Width / 2), 260);
             btnLogin.Click += new EventHandler(btnLogin_Click);
             this.Controls.Add(btnLogin);
         }
@@ -88,7 +87,7 @@ namespace SCANHUB___INVENTARIO_Y_CAJA
         {
             if (e.KeyCode == Keys.Enter)
             {
-                btnLogin_Click(sender, e); // Llama al evento click del botón login
+                btnLogin_Click(sender, e);
             }
         }
 
@@ -102,7 +101,7 @@ namespace SCANHUB___INVENTARIO_Y_CAJA
             if (DatabaseConfig.ValidateUser(username, password))
             {
                 MessageBox.Show("Datos correctos. Bienvenido " + username + "!");
-                this.Hide(); // Opcional: Oculta el formulario de login
+                this.Hide(); 
                 Dashboard dashboardForm = new Dashboard();
                 dashboardForm.Show();
             }
